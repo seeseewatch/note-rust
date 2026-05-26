@@ -1,0 +1,25 @@
+[package]
+name = "note-rust"
+version = "0.1.0"
+edition = "2024"
+description = "A minimal notepad-like text editor built with egui"
+
+# eframe is the egui framework crate that handles:
+# - Window creation (via winit on desktop)
+# - The event loop and rendering lifecycle
+# - Platform integration (clipboard, menus, etc.)
+#
+# rfd (Rust File Dialogs) provides native OS file picker dialogs
+# for open/save operations without pulling in heavy GUI libraries.
+# We use async-std feature so file dialogs don't block the main thread.
+[dependencies]
+eframe = "0.31"
+
+# egui 由 eframe 重新导出，但仍需作为直接依赖引入才能使用其类型
+# （Context, Key, Modifiers, TextEdit 等）。这与 eframe 的模块系统设计有关。
+egui = "0.31"
+
+# rfd (Rust File Dialogs) 提供原生 OS 文件选择器对话框，
+# 用于打开/保存操作，无需引入重量级 GUI 库。
+# async-std 特性确保文件对话框不会阻塞主线程。
+rfd = { version = "0.15", default-features = false, features = ["async-std"] }
