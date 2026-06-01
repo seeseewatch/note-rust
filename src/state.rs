@@ -18,6 +18,7 @@ pub struct AppState {
     pub word_wrap: bool,
     pub font_size: f32,
     pub show_about: bool,
+    fonts_initialized: bool,
 }
 
 impl Default for AppState {
@@ -30,6 +31,7 @@ impl Default for AppState {
             word_wrap: true,
             font_size: 14.0,
             show_about: false,
+            fonts_initialized: false,
         }
     }
 }
@@ -103,5 +105,69 @@ impl AppState {
     /// 减小字体大小（下限 8px）。
     pub fn decrease_font_size(&mut self) {
         self.font_size = (self.font_size - 1.0).max(8.0);
+    }
+
+    pub fn configure_appearance(&mut self, ctx: &egui::Context) {
+        if self.fonts_initialized {
+            return;
+        }
+        self.fonts_initialized = true;
+
+        self.load_cjk_font(ctx);
+        self.apply_zed_theme(ctx);
+    }
+
+    fn load_cjk_font(&self, ctx: &egui::Context) {
+        let font_path = "/System/Library/Fonts/Hiragino Sans GB.ttc";
+        let font_bytes = match std::fs::read(font_path) {
+            Ok(bytes) => bytes,
+            Err(err) => {
+                eprintln!("Failed to load CJK font: {err}");
+                return;
+            }
+        };
+
+        let mut fonts = egui::FontDefinitions::default();
+        fonts.font_data.insert(
+            "Hiragino".to_owned(),
+            std::sync::Arc::new(egui::FontData::from_owned(font_bytes).tweak(
+                egui::FontTweak {
+                    scale: 0.88,
+                    y_offset: 2.0,
+                    ..Default::default()
+                },
+            )),
+        );
+        if let Some(family) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
+            family.push("Hiragino".to_owned());
+        }
+        if let Some(family) = fonts.families.get_mut(&egui::FontFamily::Monospace) {
+            family.push("Hiragino".to_owned());
+        }
+        ctx.set_fonts(fonts);
+    }
+
+    fn apply_zed_theme(&self, ctx: &egui::Context) {
+        let mut visuals = egui::Visuals::dark();
+        visuals.panel_fill = egui::Color32::from_rgb(0x1E, 0x1E, 0x1E);
+        visuals.window_fill = egui::Color32::from_rgb(0x25, 0x25, 0x26);
+        visuals.extreme_bg_color = egui::Color32::from_rgb(0x14, 0x14, 0x14);
+        visuals.faint_bg_color = egui::Color32::from_rgb(0x2D, 0x2D, 0x2D);
+        visuals.code_bg_color = egui::Color32::from_rgb(0x1E, 0x1E, 0x1E);
+        visuals.text_edit_bg_color = Some(egui::Color32::from_rgb(0x1E, 0x1E, 0x1E));
+        visuals.window_shadow = egui::epaint::Shadow::NONE;
+        visuals.window_corner_radius = egui::CornerRadius::same(4);
+        visuals.window_stroke = egui::Stroke::new(1.0, egui::Color32::from_rgb(0x3C, 0x3C, 0x3C));
+        visuals.selection.bg_fill = egui::Color32::from_rgb(0x26, 0x4F, 0x78);
+        visuals.widgets.noninteractive.fg_stroke =
+            egui::Stroke::new(1.0, egui::Color32::from_rgb(0xD4, 0xD4, 0xD4));
+        visuals.widgets.inactive.bg_stroke =
+            egui::Stroke::new(1.0, egui::Color32::from_rgb(0x3C, 0x3C, 0x3C));
+        visuals.widgets.hovered.bg_stroke =
+            egui::Stroke::new(1.0, egui::Color32::from_rgb(0x52, 0x52, 0x52));
+        visuals.widgets.active.bg_stroke =
+            egui::Stroke::new(1.0, egui::Color32::from_rgb(0x00, 0x78, 0xD4));
+        visuals.override_text_color = Some(egui::Color32::from_rgb(0xD4, 0xD4, 0xD4));
+        ctx.set_visuals(visuals);
     }
 }
